@@ -6,29 +6,44 @@ function App() {
   const [students, setStudents] = useState([]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
 
-  // Fetch students
+  const fetchStudents = () => {
+    axios.get('/api/students')
+      .then(res => {
+        console.log('Fetched:', res.data);
+        setStudents(res.data);
+      })
+      .catch(err => {
+        console.error('Fetch error:', err);
+        setError('Failed to load students');
+      });
+  };
+
   useEffect(() => {
-    axios.get('http://localhost:5000/api/students')
-      .then(res => setStudents(res.data))
-      .catch(err => console.error(err));
+    fetchStudents();
   }, []);
 
-  // Add student
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios.post('http://localhost:5000/api/students', { name, email })
+    setError('');
+    axios.post('/api/students', { name, email })
       .then(res => {
-        setStudents([...students, res.data]);
+        console.log('Added:', res.data);
         setName('');
         setEmail('');
+        fetchStudents(); // Refetch to ensure sync
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.error('Post error:', err);
+        setError(err.response?.data?.error || 'Failed to add student');
+      });
   };
 
   return (
     <div className="App">
       <h1>Students</h1>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
       <form onSubmit={handleSubmit}>
         <input
           type="text"
@@ -45,11 +60,15 @@ function App() {
         <button type="submit">Add Student</button>
       </form>
       <ul>
-        {students.map(student => (
-          <li key={student.id}>{student.name} - {student.email}</li>
-        ))}
+        {students.length > 0 ? (
+          students.map(student => (
+            <li key={student.id}>{student.name} - {student.email}</li>
+          ))
+        ) : (
+          <p>No students yet</p>
+        )}
       </ul>
-    </div>
+    </div>   
   );
 }
 
